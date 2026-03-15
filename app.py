@@ -105,6 +105,8 @@ st.write("## EcoSentinel AI Advisor")
 
 question = st.text_input("Ask about plant sustainability:")
 
+if not question:
+    st.info("Example questions: water usage, energy optimization, chemical safety")
 if question:
 
     if "water" in question.lower():
