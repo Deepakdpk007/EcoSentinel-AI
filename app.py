@@ -10,8 +10,7 @@ import requests
 
 HF_API_KEY = st.secrets["HF_API_KEY"]
 
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-
+API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
 headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
 }
