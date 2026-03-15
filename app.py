@@ -4,15 +4,16 @@ from sklearn.ensemble import IsolationForest
 import plotly.express as px
 import os
 
-# --- GenAI Imports ---
+# --- Modern GenAI Imports (Upgraded to LCEL) ---
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
 from langchain_community.vectorstores import FAISS
-from langchain.chains import RetrievalQA
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import PromptTemplate
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
-
 st.title("🌿 EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring Platform")
 
@@ -29,7 +30,7 @@ data = {
 df = pd.DataFrame(data)
 
 # -------------------------
-# ML Anomaly Detection (Classical ML)
+# ML Anomaly Detection
 # -------------------------
 features = df[["water_usage","energy","chemical","temperature"]]
 model = IsolationForest(contamination=0.2, random_state=42)
@@ -61,13 +62,12 @@ with colB:
     st.plotly_chart(fig3, use_container_width=True)
 
 # -------------------------
-# 🧠 AI Advisor (GenAI + RAG Architecture)
+# 🧠 AI Advisor (GenAI + Modern RAG Architecture)
 # -------------------------
 st.divider()
 st.write("## 🧠 True GenAI Sustainability Advisor")
-st.info("This section uses LangChain, FAISS (Vector DB), and a Large Language Model to read the plant's engineering manual and generate dynamic troubleshooting steps.")
+st.info("This section uses LangChain LCEL, FAISS, and an LLM to read the plant's engineering manual and generate dynamic troubleshooting steps.")
 
-# Secure token input
 hf_token = st.text_input("Enter your Hugging Face Token to activate AI:", type="password")
 question = st.text_input("Ask the AI about plant troubleshooting (e.g., 'Plant P4 has water usage of 900. What should we do?'):")
 
@@ -76,7 +76,7 @@ if hf_token and question:
     
     with st.spinner("AI is reading the engineering manual and thinking..."):
         try:
-            # 1. Create a simulated manual on the fly
+            # 1. Create a simulated manual
             manual_text = """
             EcoSentinel Industrial Plant Troubleshooting Manual:
             Section 1 - Cooling Systems: If water usage exceeds 800 units, it indicates a severe cooling tower leak or a malfunctioning evaporation valve. Engineers must immediately shut off the main water line and inspect the secondary cooling loops.
@@ -86,13 +86,13 @@ if hf_token and question:
             with open("manual.txt", "w") as f:
                 f.write(manual_text)
 
-            # 2. Document Ingestion & Splitting
+            # 2. Document Ingestion
             loader = TextLoader("manual.txt")
             documents = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
             chunks = text_splitter.split_documents(documents)
 
-            # 3. Embeddings & Vector Database
+            # 3. Vector Database
             embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
             vector_db = FAISS.from_documents(chunks, embeddings)
 
@@ -103,19 +103,21 @@ if hf_token and question:
                 max_new_tokens=250
             )
 
-            # 5. Execute RAG Chain
-            qa_chain = RetrievalQA.from_chain_type(
-                llm=llm,
-                chain_type="stuff",
-                retriever=vector_db.as_retriever(search_kwargs={"k": 2})
+            # 5. Modern RAG Chain Execution (LCEL)
+            prompt = PromptTemplate.from_template(
+                "Use the following manual to answer the question.\n\nContext: {context}\n\nQuestion: {input}\n\nAnswer:"
             )
+            document_chain = create_stuff_documents_chain(llm, prompt)
+            retriever = vector_db.as_retriever(search_kwargs={"k": 2})
+            qa_chain = create_retrieval_chain(retriever, document_chain)
 
-            response = qa_chain.invoke(question)
+            response = qa_chain.invoke({"input": question})
+            
             st.success("🤖 AI Diagnostic Complete:")
-            st.write(response['result'])
+            st.write(response['answer'])
             
         except Exception as e:
-            st.error(f"An error occurred with the AI API: {e}. Please check your token.")
+            st.error(f"An error occurred: {e}. Please check your token or reboot the app.")
 
 elif question and not hf_token:
     st.warning("🔒 Please enter a valid Hugging Face API token to unlock the AI Advisor.")
