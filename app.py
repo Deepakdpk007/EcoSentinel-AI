@@ -71,15 +71,12 @@ df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
 st.subheader("Plant Sustainability Analytics Dashboard")
 
-# Water Usage Chart
 fig1 = px.bar(df,x="plant_id",y="water_usage",title="Water Usage")
 st.plotly_chart(fig1)
 
-# Energy Chart
 fig2 = px.line(df,x="plant_id",y="energy",markers=True,title="Energy Consumption")
 st.plotly_chart(fig2)
 
-# Sustainability Score Chart
 fig3 = px.bar(df,x="plant_id",y="sustainability_score",title="Sustainability Score")
 st.plotly_chart(fig3)
 
@@ -124,7 +121,15 @@ Provide clear recommendations.
 
     result = response.json()
 
-    return result[0]["generated_text"]
+    # Safe handling for different API responses
+    if isinstance(result, list):
+        return result[0].get("generated_text", "No response generated.")
+    
+    elif isinstance(result, dict) and "error" in result:
+        return f"API Error: {result['error']}"
+
+    else:
+        return str(result)
 
 # ---------------------------
 # AI Advisor UI
