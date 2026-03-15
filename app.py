@@ -4,27 +4,28 @@ from sklearn.ensemble import IsolationForest
 import plotly.express as px
 import requests
 
-# ---------------------------
-# Hugging Face API Setup
-# ---------------------------
+# -----------------------
+# Hugging Face Setup
+# -----------------------
 
 HF_API_KEY = st.secrets["HF_API_KEY"]
 
 API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+
 headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
 }
 
-# ---------------------------
+# -----------------------
 # Page Title
-# ---------------------------
+# -----------------------
 
 st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring System")
 
-# ---------------------------
-# Simulated Industrial Data
-# ---------------------------
+# -----------------------
+# Simulated Data
+# -----------------------
 
 data = {
     "plant_id": ["P1","P2","P3","P4","P5"],
@@ -36,16 +37,12 @@ data = {
 
 df = pd.DataFrame(data)
 
-# ---------------------------
-# Show Data
-# ---------------------------
-
 st.write("### Plant Monitoring Data")
 st.dataframe(df)
 
-# ---------------------------
+# -----------------------
 # ML Anomaly Detection
-# ---------------------------
+# -----------------------
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
@@ -53,35 +50,35 @@ model = IsolationForest(contamination=0.2)
 
 df["anomaly"] = model.fit_predict(features)
 
-df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x==-1 else "Normal")
+df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Normal")
 
 st.write("### Plant Status")
 st.dataframe(df[["plant_id","status"]])
 
-# ---------------------------
+# -----------------------
 # Sustainability Score
-# ---------------------------
+# -----------------------
 
 df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
-# ---------------------------
+# -----------------------
 # Charts
-# ---------------------------
+# -----------------------
 
 st.subheader("Plant Sustainability Analytics Dashboard")
 
-fig1 = px.bar(df,x="plant_id",y="water_usage",title="Water Usage")
+fig1 = px.bar(df, x="plant_id", y="water_usage", title="Water Usage")
 st.plotly_chart(fig1)
 
-fig2 = px.line(df,x="plant_id",y="energy",markers=True,title="Energy Consumption")
+fig2 = px.line(df, x="plant_id", y="energy", markers=True, title="Energy Consumption")
 st.plotly_chart(fig2)
 
-fig3 = px.bar(df,x="plant_id",y="sustainability_score",title="Sustainability Score")
+fig3 = px.bar(df, x="plant_id", y="sustainability_score", title="Sustainability Score")
 st.plotly_chart(fig3)
 
-# ---------------------------
+# -----------------------
 # Knowledge Base
-# ---------------------------
+# -----------------------
 
 documents = """
 Water recycling systems reduce industrial water usage.
@@ -94,9 +91,9 @@ and industrial automation systems.
 Chemical safety requires proper dosing and sensor calibration.
 """
 
-# ---------------------------
+# -----------------------
 # AI Advisor Function
-# ---------------------------
+# -----------------------
 
 def ask_ai(question):
 
@@ -112,27 +109,35 @@ Question:
 Provide clear recommendations.
 """
 
-    payload = {
-        "inputs": prompt
-    }
+    payload = {"inputs": prompt}
 
-    response = requests.post(API_URL, headers=headers, json=payload)
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
 
-    result = response.json()
+        # If request failed
+        if response.status_code != 200:
+            return f"API Error: {response.text}"
 
-    # Safe handling for different API responses
-    if isinstance(result, list):
-        return result[0].get("generated_text", "No response generated.")
-    
-    elif isinstance(result, dict) and "error" in result:
-        return f"API Error: {result['error']}"
+        # Try reading JSON safely
+        try:
+            result = response.json()
+        except:
+            return "Model is loading or API returned non-JSON response. Try again in a few seconds."
 
-    else:
+        if isinstance(result, list):
+            return result[0].get("generated_text", "No response generated.")
+
+        if isinstance(result, dict) and "error" in result:
+            return f"API Error: {result['error']}"
+
         return str(result)
 
-# ---------------------------
+    except Exception as e:
+        return f"Request failed: {str(e)}"
+
+# -----------------------
 # AI Advisor UI
-# ---------------------------
+# -----------------------
 
 st.write("## EcoSentinel AI Advisor")
 
