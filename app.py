@@ -4,16 +4,22 @@ from sklearn.ensemble import IsolationForest
 import plotly.express as px
 from openai import OpenAI
 
-# -------------------------------
+# -----------------------------
+# OpenAI Client
+# -----------------------------
+
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+# -----------------------------
 # Page Title
-# -------------------------------
+# -----------------------------
 
 st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring System")
 
-# -------------------------------
+# -----------------------------
 # Simulated Industrial Dataset
-# -------------------------------
+# -----------------------------
 
 data = {
     "plant_id": ["P1","P2","P3","P4","P5"],
@@ -25,16 +31,16 @@ data = {
 
 df = pd.DataFrame(data)
 
-# -------------------------------
-# Display Dataset
-# -------------------------------
+# -----------------------------
+# Show Plant Data
+# -----------------------------
 
 st.write("### Plant Monitoring Data")
 st.dataframe(df)
 
-# -------------------------------
-# Machine Learning Anomaly Detection
-# -------------------------------
+# -----------------------------
+# ML Anomaly Detection
+# -----------------------------
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
@@ -47,15 +53,15 @@ df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Nor
 st.write("### Plant Status")
 st.dataframe(df[["plant_id","status"]])
 
-# -------------------------------
+# -----------------------------
 # Sustainability Score
-# -------------------------------
+# -----------------------------
 
 df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
-# -------------------------------
+# -----------------------------
 # Dashboard Charts
-# -------------------------------
+# -----------------------------
 
 st.subheader("Plant Sustainability Analytics Dashboard")
 
@@ -72,7 +78,7 @@ fig1 = px.bar(
 
 st.plotly_chart(fig1)
 
-# Energy Chart
+# Energy Consumption Chart
 st.write("### Energy Consumption Trend")
 
 fig2 = px.line(
@@ -98,9 +104,9 @@ fig3 = px.bar(
 
 st.plotly_chart(fig3)
 
-# -------------------------------
-# Knowledge Base (RAG Context)
-# -------------------------------
+# -----------------------------
+# Knowledge Base
+# -----------------------------
 
 documents = [
 """
@@ -120,15 +126,9 @@ Sensor calibration is important to prevent overdosing chemicals.
 """
 ]
 
-# -------------------------------
-# OpenAI Client
-# -------------------------------
-
-client = OpenAI()
-
-# -------------------------------
-# AI Recommendation Function
-# -------------------------------
+# -----------------------------
+# AI Advisor Function
+# -----------------------------
 
 def ask_ai(question):
 
@@ -145,19 +145,19 @@ Knowledge Base:
 User Question:
 {question}
 
-Provide clear and practical sustainability recommendations.
+Provide clear sustainability recommendations.
 """
 
     response = client.responses.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         input=prompt
     )
 
     return response.output[0].content[0].text
 
-# -------------------------------
+# -----------------------------
 # AI Advisor Interface
-# -------------------------------
+# -----------------------------
 
 st.write("## EcoSentinel AI Advisor")
 
