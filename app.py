@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
-from transformers import pipeline
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
@@ -63,56 +62,84 @@ fig3 = px.bar(df,x="plant_id",y="sustainability_score",title="Sustainability Sco
 st.plotly_chart(fig3)
 
 # -------------------------
-# Load LLM
+# AI Explanation
 # -------------------------
 
-@st.cache_resource
-def load_llm():
-    return pipeline("text2text-generation",model="google/flan-t5-base")
+st.write("## AI Anomaly Explanation")
 
-llm = load_llm()
+def explain(row):
 
-# -------------------------
-# Knowledge Context
-# -------------------------
+    if row["status"]=="Normal":
+        return "Plant operating within normal sustainability limits."
 
-knowledge = """
-Water recycling systems reduce industrial water usage.
-Cooling towers often cause high water consumption.
-Leak detection systems prevent pipeline losses.
+    avg = df["water_usage"].mean()
 
-Energy efficiency improves using variable speed pumps
-and industrial automation systems.
+    if row["water_usage"] > avg:
+        return """
+High water usage detected.
 
-Chemical safety requires proper dosing and sensor calibration.
+Possible causes:
+• cooling tower inefficiency
+• pipeline leakage
+• poor recycling systems
 """
+
+    return "Abnormal resource consumption detected."
+
+plant = st.selectbox("Select Plant",df["plant_id"])
+
+plant_data = df[df["plant_id"]==plant].iloc[0]
+
+st.warning(explain(plant_data))
 
 # -------------------------
 # AI Advisor
 # -------------------------
 
-st.write("## AI Sustainability Advisor")
+st.write("## Sustainability Advisor")
 
 question = st.text_input("Ask about plant sustainability:")
 
-def ask_ai(question):
+def advisor(q):
 
-    prompt = f"""
-Using the following sustainability knowledge:
+    q=q.lower()
 
-{knowledge}
+    if "water" in q:
+        return """
+Recommended actions:
 
-Answer this question:
-{question}
+• inspect cooling tower efficiency
+• implement water recycling
+• detect pipeline leaks
 """
 
-    result = llm(prompt,max_length=150)
+    if "energy" in q:
+        return """
+Energy optimization suggestions:
 
-    return result[0]["generated_text"]
+• use variable speed pumps
+• automate industrial processes
+• monitor energy usage
+"""
+
+    if "chemical" in q:
+        return """
+Chemical safety improvements:
+
+• check dosing system
+• calibrate sensors
+• monitor chemical concentration
+"""
+
+    return """
+General sustainability improvements:
+
+• monitor resource consumption
+• improve maintenance schedules
+• implement industrial monitoring systems
+"""
 
 if question:
-    answer = ask_ai(question)
-    st.success(answer)
-
+    st.success(advisor(question))
 else:
-    st.info("Example: How can a plant reduce water consumption?")
+    st.info("Example questions: water usage, energy efficiency, chemical safety")
