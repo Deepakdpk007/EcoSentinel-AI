@@ -2,16 +2,17 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
+from openai import OpenAI
 
 # -------------------------------
-# Title
+# Page Title
 # -------------------------------
 
 st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring System")
 
 # -------------------------------
-# Simulated Plant Dataset
+# Simulated Industrial Dataset
 # -------------------------------
 
 data = {
@@ -25,14 +26,14 @@ data = {
 df = pd.DataFrame(data)
 
 # -------------------------------
-# Display Plant Data
+# Display Dataset
 # -------------------------------
 
 st.write("### Plant Monitoring Data")
 st.dataframe(df)
 
 # -------------------------------
-# Anomaly Detection
+# Machine Learning Anomaly Detection
 # -------------------------------
 
 features = df[["water_usage","energy","chemical","temperature"]]
@@ -71,7 +72,7 @@ fig1 = px.bar(
 
 st.plotly_chart(fig1)
 
-# Energy Consumption Chart
+# Energy Chart
 st.write("### Energy Consumption Trend")
 
 fig2 = px.line(
@@ -96,68 +97,74 @@ fig3 = px.bar(
 )
 
 st.plotly_chart(fig3)
+
+# -------------------------------
+# Knowledge Base (RAG Context)
+# -------------------------------
+
 documents = [
 """
-Water recycling systems can reduce industrial water usage significantly.
+Water recycling systems can significantly reduce industrial water usage.
 Cooling towers are often responsible for high water consumption.
-Leak detection systems help prevent water loss.
+Leak detection systems help prevent water loss in pipelines.
 """,
 
 """
 Energy efficiency in industrial plants can be improved using variable speed pumps,
-heat recovery systems, and process automation.
+heat recovery systems, and automation of industrial processes.
 """,
 
 """
-Chemical safety requires monitoring dosing levels carefully.
+Chemical safety requires careful monitoring of dosing levels.
 Sensor calibration is important to prevent overdosing chemicals.
 """
 ]
 
 # -------------------------------
-# AI Sustainability Advisor
+# OpenAI Client
+# -------------------------------
+
+client = OpenAI()
+
+# -------------------------------
+# AI Recommendation Function
+# -------------------------------
+
+def ask_ai(question):
+
+    context = "\n".join(documents)
+
+    prompt = f"""
+You are an industrial sustainability AI assistant.
+
+Use the following knowledge to answer the user's question.
+
+Knowledge Base:
+{context}
+
+User Question:
+{question}
+
+Provide clear and practical sustainability recommendations.
+"""
+
+    response = client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt
+    )
+
+    return response.output[0].content[0].text
+
+# -------------------------------
+# AI Advisor Interface
 # -------------------------------
 
 st.write("## EcoSentinel AI Advisor")
 
 question = st.text_input("Ask about plant sustainability:")
 
-if not question:
-    st.info("Example questions: water usage, energy optimization, chemical safety")
 if question:
-
-    if "water" in question.lower():
-        st.success("""
-High water usage detected.
-
-Recommended actions:
-• Inspect cooling tower efficiency  
-• Implement water recycling systems  
-• Check for pipeline leaks
-""")
-
-    elif "energy" in question.lower():
-        st.success("""
-Energy optimization recommended.
-
-Suggested improvements:
-• Install variable speed pumps  
-• Optimize industrial process automation  
-• Monitor energy consumption trends
-""")
-
-    elif "chemical" in question.lower():
-        st.success("""
-Chemical imbalance detected.
-
-Recommended actions:
-• Check chemical dosing systems  
-• Calibrate monitoring sensors  
-• Monitor chemical concentration levels
-""")
-
-    else:
-        st.info("""
-EcoSentinel AI suggests monitoring plant resources regularly
-and implementing sustainability best practices.
-""")
+    answer = ask_ai(question)
+    st.success(answer)
+else:
+    st.info("Example questions: How to reduce water usage? How to improve energy efficiency?")
