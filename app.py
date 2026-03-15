@@ -96,6 +96,23 @@ fig3 = px.bar(
 )
 
 st.plotly_chart(fig3)
+documents = [
+"""
+Water recycling systems can reduce industrial water usage significantly.
+Cooling towers are often responsible for high water consumption.
+Leak detection systems help prevent water loss.
+""",
+
+"""
+Energy efficiency in industrial plants can be improved using variable speed pumps,
+heat recovery systems, and process automation.
+""",
+
+"""
+Chemical safety requires monitoring dosing levels carefully.
+Sensor calibration is important to prevent overdosing chemicals.
+"""
+]
 
 # -------------------------------
 # AI Sustainability Advisor
