@@ -6,3 +6,5 @@ faiss-cpu
 langchain
 matplotlib
 streamlit
+plotly
+altair==4.2.2
