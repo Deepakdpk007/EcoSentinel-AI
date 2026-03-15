@@ -9,12 +9,11 @@ st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 # HuggingFace Router
 HF_API_KEY = st.secrets["HF_API_KEY"]
 
-API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
+API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2?provider=hf"
 
 headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
 }
-
 # --------------------
 # Title
 # --------------------
