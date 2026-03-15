@@ -3,16 +3,14 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
 
-# -----------------------
-# Page Title
-# -----------------------
+st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
 st.title("EcoSentinel AI")
-st.subheader("Industrial Sustainability Monitoring System")
+st.subheader("Industrial Sustainability Monitoring Platform")
 
-# -----------------------
-# Simulated Industrial Data
-# -----------------------
+# ---------------------
+# Simulated Data
+# ---------------------
 
 data = {
     "plant_id": ["P1","P2","P3","P4","P5"],
@@ -24,12 +22,9 @@ data = {
 
 df = pd.DataFrame(data)
 
-st.write("### Plant Monitoring Data")
-st.dataframe(df)
-
-# -----------------------
+# ---------------------
 # ML Anomaly Detection
-# -----------------------
+# ---------------------
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
@@ -39,20 +34,40 @@ df["anomaly"] = model.fit_predict(features)
 
 df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Normal")
 
-st.write("### Plant Status")
-st.dataframe(df[["plant_id","status"]])
-
-# -----------------------
-# Sustainability Score
-# -----------------------
-
 df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
-# -----------------------
-# Charts
-# -----------------------
+# ---------------------
+# KPI CARDS
+# ---------------------
 
-st.subheader("Plant Sustainability Analytics Dashboard")
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Plants", len(df))
+
+anomaly_count = len(df[df["status"]=="Alert ⚠️"])
+col2.metric("Anomalies Detected", anomaly_count)
+
+avg_score = int(df["sustainability_score"].mean())
+col3.metric("Average Sustainability Score", avg_score)
+
+# ---------------------
+# Plant Selector
+# ---------------------
+
+st.write("## Plant Selection")
+
+plant = st.selectbox("Choose Plant", df["plant_id"])
+
+plant_data = df[df["plant_id"]==plant]
+
+st.write("### Plant Data")
+st.dataframe(plant_data)
+
+# ---------------------
+# Charts
+# ---------------------
+
+st.write("## Sustainability Analytics")
 
 fig1 = px.bar(df, x="plant_id", y="water_usage", title="Water Usage")
 st.plotly_chart(fig1)
@@ -63,81 +78,85 @@ st.plotly_chart(fig2)
 fig3 = px.bar(df, x="plant_id", y="sustainability_score", title="Sustainability Score")
 st.plotly_chart(fig3)
 
-# -----------------------
-# Knowledge Base
-# -----------------------
+# ---------------------
+# AI Explanation
+# ---------------------
 
-knowledge = {
-    "water": [
-        "Inspect cooling tower efficiency",
-        "Install water recycling systems",
-        "Check pipelines for leaks",
-        "Optimize cooling water circulation"
-    ],
-    "energy": [
-        "Use variable speed pumps",
-        "Optimize industrial process automation",
-        "Install energy monitoring systems",
-        "Improve equipment maintenance"
-    ],
-    "chemical": [
-        "Check chemical dosing systems",
-        "Calibrate monitoring sensors",
-        "Monitor chemical concentration regularly"
-    ],
-    "temperature": [
-        "Inspect cooling systems",
-        "Check equipment overheating",
-        "Improve ventilation and airflow"
-    ]
-}
+st.write("## AI Anomaly Explanation")
 
-# -----------------------
-# AI Advisor Function
-# -----------------------
+def explain_anomaly(row):
 
-def ask_ai(question):
+    if row["status"]=="Normal":
+        return "Plant operating within normal sustainability limits."
 
-    question = question.lower()
+    water_avg = df["water_usage"].mean()
 
-    response = []
+    if row["water_usage"] > water_avg:
+        return f"""
+High water usage detected.
 
-    if "water" in question:
-        response += knowledge["water"]
+Water consumption is significantly higher than the plant average.
 
-    if "energy" in question:
-        response += knowledge["energy"]
+Possible causes:
+• cooling tower inefficiency
+• pipeline leakage
+• poor recycling systems
+"""
 
-    if "chemical" in question:
-        response += knowledge["chemical"]
+    return "Anomaly detected due to unusual resource consumption."
 
-    if "temperature" in question:
-        response += knowledge["temperature"]
+explanation = explain_anomaly(plant_data.iloc[0])
 
-    if len(response) == 0:
-        response = [
-            "Monitor plant resource usage regularly",
-            "Improve maintenance schedules",
-            "Implement sustainability monitoring systems"
-        ]
+st.warning(explanation)
 
-    output = "Recommended actions:\n\n"
+# ---------------------
+# AI Advisor
+# ---------------------
 
-    for r in response:
-        output += f"• {r}\n"
-
-    return output
-
-# -----------------------
-# AI Advisor UI
-# -----------------------
-
-st.write("## EcoSentinel AI Advisor")
+st.write("## Sustainability Advisor")
 
 question = st.text_input("Ask about plant sustainability:")
 
+def advisor(q):
+
+    q=q.lower()
+
+    if "water" in q:
+        return """
+Recommended actions:
+
+• inspect cooling tower efficiency
+• implement water recycling
+• detect pipeline leaks
+"""
+
+    if "energy" in q:
+        return """
+Energy optimization suggestions:
+
+• use variable speed pumps
+• automate industrial processes
+• monitor energy usage
+"""
+
+    if "chemical" in q:
+        return """
+Chemical safety improvements:
+
+• check dosing system
+• calibrate sensors
+• monitor chemical concentration
+"""
+
+    return """
+General sustainability improvements:
+
+• monitor resource consumption
+• improve maintenance schedules
+• implement industrial monitoring systems
+"""
+
 if question:
-    answer = ask_ai(question)
-    st.success(answer)
+    st.success(advisor(question))
 else:
     st.info("Example questions: water usage, energy efficiency, chemical safety")
