@@ -2,19 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
-import requests
-
-# -----------------------
-# Hugging Face Setup
-# -----------------------
-
-HF_API_KEY = st.secrets["HF_API_KEY"]
-
-API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
-
-headers = {
-    "Authorization": f"Bearer {HF_API_KEY}"
-}
 
 # -----------------------
 # Page Title
@@ -24,7 +11,7 @@ st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring System")
 
 # -----------------------
-# Simulated Data
+# Simulated Industrial Data
 # -----------------------
 
 data = {
@@ -80,16 +67,30 @@ st.plotly_chart(fig3)
 # Knowledge Base
 # -----------------------
 
-documents = """
-Water recycling systems reduce industrial water usage.
-Cooling towers often cause high water consumption.
-Leak detection helps prevent water loss.
-
-Energy efficiency improves using variable speed pumps
-and industrial automation systems.
-
-Chemical safety requires proper dosing and sensor calibration.
-"""
+knowledge = {
+    "water": [
+        "Inspect cooling tower efficiency",
+        "Install water recycling systems",
+        "Check pipelines for leaks",
+        "Optimize cooling water circulation"
+    ],
+    "energy": [
+        "Use variable speed pumps",
+        "Optimize industrial process automation",
+        "Install energy monitoring systems",
+        "Improve equipment maintenance"
+    ],
+    "chemical": [
+        "Check chemical dosing systems",
+        "Calibrate monitoring sensors",
+        "Monitor chemical concentration regularly"
+    ],
+    "temperature": [
+        "Inspect cooling systems",
+        "Check equipment overheating",
+        "Improve ventilation and airflow"
+    ]
+}
 
 # -----------------------
 # AI Advisor Function
@@ -97,43 +98,35 @@ Chemical safety requires proper dosing and sensor calibration.
 
 def ask_ai(question):
 
-    prompt = f"""
-You are an industrial sustainability expert.
+    question = question.lower()
 
-Knowledge:
-{documents}
+    response = []
 
-Question:
-{question}
+    if "water" in question:
+        response += knowledge["water"]
 
-Provide clear recommendations.
-"""
+    if "energy" in question:
+        response += knowledge["energy"]
 
-    payload = {"inputs": prompt}
+    if "chemical" in question:
+        response += knowledge["chemical"]
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+    if "temperature" in question:
+        response += knowledge["temperature"]
 
-        # If request failed
-        if response.status_code != 200:
-            return f"API Error: {response.text}"
+    if len(response) == 0:
+        response = [
+            "Monitor plant resource usage regularly",
+            "Improve maintenance schedules",
+            "Implement sustainability monitoring systems"
+        ]
 
-        # Try reading JSON safely
-        try:
-            result = response.json()
-        except:
-            return "Model is loading or API returned non-JSON response. Try again in a few seconds."
+    output = "Recommended actions:\n\n"
 
-        if isinstance(result, list):
-            return result[0].get("generated_text", "No response generated.")
+    for r in response:
+        output += f"• {r}\n"
 
-        if isinstance(result, dict) and "error" in result:
-            return f"API Error: {result['error']}"
-
-        return str(result)
-
-    except Exception as e:
-        return f"Request failed: {str(e)}"
+    return output
 
 # -----------------------
 # AI Advisor UI
@@ -147,4 +140,4 @@ if question:
     answer = ask_ai(question)
     st.success(answer)
 else:
-    st.info("Example: How to reduce water usage?")
+    st.info("Example questions: water usage, energy efficiency, chemical safety")
