@@ -2,28 +2,16 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
-import requests
+from transformers import pipeline
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
-
-# HuggingFace Router
-HF_API_KEY = st.secrets["HF_API_KEY"]
-
-API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2?provider=hf"
-
-headers = {
-    "Authorization": f"Bearer {HF_API_KEY}"
-}
-# --------------------
-# Title
-# --------------------
 
 st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring Platform")
 
-# --------------------
+# -------------------------
 # Dataset
-# --------------------
+# -------------------------
 
 data = {
     "plant_id":["P1","P2","P3","P4","P5"],
@@ -35,9 +23,9 @@ data = {
 
 df = pd.DataFrame(data)
 
-# --------------------
+# -------------------------
 # ML Anomaly Detection
-# --------------------
+# -------------------------
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
@@ -49,21 +37,19 @@ df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x==-1 else "Norma
 
 df["sustainability_score"] = 100 - (df["water_usage"]*0.05)
 
-# --------------------
+# -------------------------
 # KPI Cards
-# --------------------
+# -------------------------
 
 col1,col2,col3 = st.columns(3)
 
 col1.metric("Total Plants",len(df))
-
-col2.metric("Anomalies",len(df[df["status"]=="Alert ⚠️"]))
-
+col2.metric("Anomalies Detected",len(df[df["status"]=="Alert ⚠️"]))
 col3.metric("Avg Sustainability Score",int(df["sustainability_score"].mean()))
 
-# --------------------
+# -------------------------
 # Charts
-# --------------------
+# -------------------------
 
 st.write("## Sustainability Analytics")
 
@@ -76,70 +62,57 @@ st.plotly_chart(fig2)
 fig3 = px.bar(df,x="plant_id",y="sustainability_score",title="Sustainability Score")
 st.plotly_chart(fig3)
 
-# --------------------
+# -------------------------
+# Load LLM
+# -------------------------
+
+@st.cache_resource
+def load_llm():
+    return pipeline("text2text-generation",model="google/flan-t5-base")
+
+llm = load_llm()
+
+# -------------------------
 # Knowledge Context
-# --------------------
+# -------------------------
 
 knowledge = """
 Water recycling systems reduce industrial water usage.
-Cooling towers often cause excessive water consumption.
+Cooling towers often cause high water consumption.
 Leak detection systems prevent pipeline losses.
 
-Energy efficiency can improve using variable speed pumps
-and industrial automation.
+Energy efficiency improves using variable speed pumps
+and industrial automation systems.
 
-Chemical safety requires correct dosing and sensor calibration.
+Chemical safety requires proper dosing and sensor calibration.
 """
 
-# --------------------
-# LLM Advisor
-# --------------------
-
-def ask_ai(question):
-
-    prompt = f"""
-You are an industrial sustainability expert.
-
-Knowledge:
-{knowledge}
-
-Question:
-{question}
-
-Provide clear recommendations.
-"""
-
-    payload = {"inputs":prompt}
-
-    try:
-        r = requests.post(API_URL,headers=headers,json=payload)
-
-        if r.status_code != 200:
-            return f"API Error: {r.text}"
-
-        try:
-            result = r.json()
-        except:
-            return "Model loading. Try again in a few seconds."
-
-        if isinstance(result,list):
-            return result[0].get("generated_text","No answer generated.")
-
-        return str(result)
-
-    except Exception as e:
-        return str(e)
-
-# --------------------
-# AI Advisor UI
-# --------------------
+# -------------------------
+# AI Advisor
+# -------------------------
 
 st.write("## AI Sustainability Advisor")
 
 question = st.text_input("Ask about plant sustainability:")
 
+def ask_ai(question):
+
+    prompt = f"""
+Using the following sustainability knowledge:
+
+{knowledge}
+
+Answer this question:
+{question}
+"""
+
+    result = llm(prompt,max_length=150)
+
+    return result[0]["generated_text"]
+
 if question:
-    response = ask_ai(question)
-    st.success(response)
+    answer = ask_ai(question)
+    st.success(answer)
+
 else:
-    st.info("Example: Why is water usage high?")
+    st.info("Example: How can a plant reduce water consumption?")
