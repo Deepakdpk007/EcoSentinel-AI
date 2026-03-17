@@ -125,17 +125,11 @@ def rag_query(question):
         context += doc.page_content + "\n"
 
     response = f"""
-Industrial Sustainability Recommendation
+Recommendation for your query:
 
-Question: {question}
+{question}
 
-Relevant Knowledge:
-{context}
-
-Suggested Actions:
-• Improve cooling system efficiency
-• Monitor resource usage regularly
-• Implement water recycling systems
+Based on industrial sustainability practices, the plant should focus on improving water efficiency through cooling system optimization, leak detection, and water recycling systems.
 """
 
     return response
