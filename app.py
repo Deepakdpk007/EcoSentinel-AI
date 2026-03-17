@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
-import requests
 
 # RAG imports
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# LLM imports
+from transformers import pipeline
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
@@ -48,7 +50,7 @@ df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 col1, col2, col3 = st.columns(3)
 
 col1.metric("Total Plants", len(df))
-col2.metric("Anomalies Detected", len(df[df["status"] == "Alert ⚠️"]))
+col2.metric("Anomalies Detected", len(df[df["status"]=="Alert ⚠️"]))
 col3.metric("Avg Sustainability Score", int(df["sustainability_score"].mean()))
 
 # -------------------------
@@ -78,7 +80,7 @@ plant_data = df[df["plant_id"] == plant].iloc[0]
 
 def explain(row):
 
-    if row["status"] == "Normal":
+    if row["status"]=="Normal":
         return "Plant operating within normal sustainability limits."
 
     avg = df["water_usage"].mean()
@@ -113,17 +115,17 @@ vector_db = Chroma(
 retriever = vector_db.as_retriever()
 
 # -------------------------
-# HuggingFace LLM Setup
+# Load LLM
 # -------------------------
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large?provider=hf"
+@st.cache_resource
+def load_llm():
+    return pipeline("text2text-generation", model="google/flan-t5-base")
 
-headers = {
-    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
-}
+llm = load_llm()
 
 # -------------------------
-# RAG + LLM Query Function
+# RAG Query
 # -------------------------
 
 def rag_query(question):
@@ -138,45 +140,21 @@ def rag_query(question):
     prompt = f"""
 You are an industrial sustainability expert.
 
-Use the following knowledge to answer the question.
+Use this knowledge to answer the question.
 
 Knowledge:
 {context}
 
 Question:
 {question}
-
-Provide clear sustainability recommendations.
 """
 
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 200
-        }
-    }
+    result = llm(prompt, max_length=200)
 
-    try:
-
-        response = requests.post(HF_API_URL, headers=headers, json=payload)
-
-        result = response.json()
-
-        if isinstance(result, list):
-            return result[0].get("generated_text", "No response generated.")
-
-        elif isinstance(result, dict) and "error" in result:
-            return f"Model error: {result['error']}"
-
-        else:
-            return str(result)
-
-    except Exception as e:
-
-        return f"API Error: {str(e)}"
+    return result[0]["generated_text"]
 
 # -------------------------
-# AI Sustainability Advisor
+# AI Advisor
 # -------------------------
 
 st.write("## AI Sustainability Advisor")
