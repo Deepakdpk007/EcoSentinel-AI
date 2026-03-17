@@ -117,7 +117,7 @@ retriever = vector_db.as_retriever()
 
 def rag_query(question):
 
-    docs = retriever.get_relevant_documents(question)
+   docs = retriever.invoke(question)
 
     context = ""
 
