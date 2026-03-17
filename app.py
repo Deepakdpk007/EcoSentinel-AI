@@ -17,11 +17,11 @@ st.subheader("Industrial Sustainability Monitoring Platform")
 # -------------------------
 
 data = {
-    "plant_id":["P1","P2","P3","P4","P5"],
-    "water_usage":[500,520,510,900,505],
-    "energy":[300,290,310,320,305],
-    "chemical":[50,55,52,70,51],
-    "temperature":[40,39,41,45,40]
+    "plant_id": ["P1","P2","P3","P4","P5"],
+    "water_usage": [500,520,510,900,505],
+    "energy": [300,290,310,320,305],
+    "chemical": [50,55,52,70,51],
+    "temperature": [40,39,41,45,40]
 }
 
 df = pd.DataFrame(data)
@@ -36,18 +36,18 @@ model = IsolationForest(contamination=0.2)
 
 df["anomaly"] = model.fit_predict(features)
 
-df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x==-1 else "Normal")
+df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Normal")
 
-df["sustainability_score"] = 100 - (df["water_usage"]*0.05)
+df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
 # -------------------------
-# KPI CARDS
+# KPI Cards
 # -------------------------
 
 col1, col2, col3 = st.columns(3)
 
 col1.metric("Total Plants", len(df))
-col2.metric("Anomalies Detected", len(df[df["status"]=="Alert ⚠️"]))
+col2.metric("Anomalies Detected", len(df[df["status"] == "Alert ⚠️"]))
 col3.metric("Avg Sustainability Score", int(df["sustainability_score"].mean()))
 
 # -------------------------
@@ -73,11 +73,11 @@ st.write("## AI Anomaly Explanation")
 
 plant = st.selectbox("Select Plant", df["plant_id"])
 
-plant_data = df[df["plant_id"]==plant].iloc[0]
+plant_data = df[df["plant_id"] == plant].iloc[0]
 
 def explain(row):
 
-    if row["status"]=="Normal":
+    if row["status"] == "Normal":
         return "Plant operating within normal sustainability limits."
 
     avg = df["water_usage"].mean()
@@ -97,7 +97,7 @@ Possible causes:
 st.warning(explain(plant_data))
 
 # -------------------------
-# RAG SETUP
+# RAG Setup
 # -------------------------
 
 embedding_model = HuggingFaceEmbeddings(
@@ -117,7 +117,7 @@ retriever = vector_db.as_retriever()
 
 def rag_query(question):
 
-   docs = retriever.invoke(question)
+    docs = retriever.invoke(question)
 
     context = ""
 
