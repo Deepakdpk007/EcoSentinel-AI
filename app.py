@@ -3,12 +3,12 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
 
-# RAG imports
+# RAG
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Gemini LLM
-import google.generativeai as genai
+# OpenAI
+from openai import OpenAI
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
@@ -16,12 +16,10 @@ st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring Platform")
 
 # -------------------------
-# Configure Gemini
+# OpenAI setup
 # -------------------------
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # -------------------------
 # Dataset
@@ -43,9 +41,9 @@ df = pd.DataFrame(data)
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
-model_ml = IsolationForest(contamination=0.2)
+model = IsolationForest(contamination=0.2)
 
-df["anomaly"] = model_ml.fit_predict(features)
+df["anomaly"] = model.fit_predict(features)
 
 df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Normal")
 
@@ -123,7 +121,7 @@ vector_db = Chroma(
 retriever = vector_db.as_retriever()
 
 # -------------------------
-# RAG + Gemini Query
+# RAG + OpenAI
 # -------------------------
 
 def rag_query(question):
@@ -146,12 +144,15 @@ Knowledge:
 Question:
 {question}
 
-Provide clear sustainability recommendations.
+Provide practical sustainability recommendations.
 """
 
-    response = model.generate_content(prompt)
+    response = client.responses.create(
+        model="gpt-4.1-mini",
+        input=prompt
+    )
 
-    return response.text
+    return response.output_text
 
 # -------------------------
 # AI Sustainability Advisor
