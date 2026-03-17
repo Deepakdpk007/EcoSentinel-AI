@@ -7,6 +7,8 @@ import plotly.express as px
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
+import requests
+
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
 st.title("EcoSentinel AI")
@@ -112,7 +114,17 @@ vector_db = Chroma(
 retriever = vector_db.as_retriever()
 
 # -------------------------
-# RAG Query Function
+# HuggingFace LLM Setup
+# -------------------------
+
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2?provider=hf"
+
+headers = {
+    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
+}
+
+# -------------------------
+# RAG + LLM Query Function
 # -------------------------
 
 def rag_query(question):
@@ -124,24 +136,35 @@ def rag_query(question):
     for doc in docs:
         context += doc.page_content + "\n"
 
-    response = f"""
+    prompt = f"""
+You are an industrial sustainability expert.
+
+Use the following knowledge to answer the question.
+
+Knowledge:
+{context}
+
 Question:
 {question}
 
-Relevant Knowledge Found:
-{context}
-
-Recommended Sustainability Actions:
-• Optimize cooling tower operations
-• Implement water recycling systems
-• Detect and repair pipeline leaks
-• Monitor industrial resource usage
+Provide clear sustainability recommendations.
 """
 
-    return response
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 200
+        }
+    }
+
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+
+    result = response.json()
+
+    return result[0]["generated_text"]
 
 # -------------------------
-# AI Advisor (RAG)
+# AI Sustainability Advisor
 # -------------------------
 
 st.write("## AI Sustainability Advisor")
