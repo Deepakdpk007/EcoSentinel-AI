@@ -7,13 +7,21 @@ import plotly.express as px
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# LLM imports
-from transformers import pipeline
+# Gemini LLM
+import google.generativeai as genai
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
 st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring Platform")
+
+# -------------------------
+# Configure Gemini
+# -------------------------
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # -------------------------
 # Dataset
@@ -35,9 +43,9 @@ df = pd.DataFrame(data)
 
 features = df[["water_usage","energy","chemical","temperature"]]
 
-model = IsolationForest(contamination=0.2)
+model_ml = IsolationForest(contamination=0.2)
 
-df["anomaly"] = model.fit_predict(features)
+df["anomaly"] = model_ml.fit_predict(features)
 
 df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Normal")
 
@@ -80,7 +88,7 @@ plant_data = df[df["plant_id"] == plant].iloc[0]
 
 def explain(row):
 
-    if row["status"]=="Normal":
+    if row["status"] == "Normal":
         return "Plant operating within normal sustainability limits."
 
     avg = df["water_usage"].mean()
@@ -115,17 +123,7 @@ vector_db = Chroma(
 retriever = vector_db.as_retriever()
 
 # -------------------------
-# Load LLM
-# -------------------------
-
-@st.cache_resource
-def load_llm():
-    return pipeline("text2text-generation", model="google/flan-t5-base")
-
-llm = load_llm()
-
-# -------------------------
-# RAG Query
+# RAG + Gemini Query
 # -------------------------
 
 def rag_query(question):
@@ -140,21 +138,23 @@ def rag_query(question):
     prompt = f"""
 You are an industrial sustainability expert.
 
-Use this knowledge to answer the question.
+Use the following knowledge to answer the question.
 
 Knowledge:
 {context}
 
 Question:
 {question}
+
+Provide clear sustainability recommendations.
 """
 
-    result = llm(prompt, max_length=200)
+    response = model.generate_content(prompt)
 
-    return result[0]["generated_text"]
+    return response.text
 
 # -------------------------
-# AI Advisor
+# AI Sustainability Advisor
 # -------------------------
 
 st.write("## AI Sustainability Advisor")
