@@ -2,12 +2,11 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
+import requests
 
 # RAG imports
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-
-import requests
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
@@ -43,7 +42,7 @@ df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Nor
 df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
 # -------------------------
-# KPI Cards
+# KPI Metrics
 # -------------------------
 
 col1, col2, col3 = st.columns(3)
@@ -117,7 +116,7 @@ retriever = vector_db.as_retriever()
 # HuggingFace LLM Setup
 # -------------------------
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2?provider=hf"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large?provider=hf"
 
 headers = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
@@ -157,11 +156,24 @@ Provide clear sustainability recommendations.
         }
     }
 
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    try:
 
-    result = response.json()
+        response = requests.post(HF_API_URL, headers=headers, json=payload)
 
-    return result[0]["generated_text"]
+        result = response.json()
+
+        if isinstance(result, list):
+            return result[0].get("generated_text", "No response generated.")
+
+        elif isinstance(result, dict) and "error" in result:
+            return f"Model error: {result['error']}"
+
+        else:
+            return str(result)
+
+    except Exception as e:
+
+        return f"API Error: {str(e)}"
 
 # -------------------------
 # AI Sustainability Advisor
@@ -179,4 +191,4 @@ if question:
 
 else:
 
-    st.info("Example: How to reduce water usage?")
+    st.info("Example: How can a plant reduce water usage?")
