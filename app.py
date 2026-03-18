@@ -7,8 +7,8 @@ import plotly.express as px
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# OpenAI
-from openai import OpenAI
+# Groq
+from groq import Groq
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
@@ -16,10 +16,10 @@ st.title("EcoSentinel AI")
 st.subheader("Industrial Sustainability Monitoring Platform")
 
 # -------------------------
-# OpenAI setup
+# Groq Setup
 # -------------------------
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # -------------------------
 # Dataset
@@ -121,7 +121,7 @@ vector_db = Chroma(
 retriever = vector_db.as_retriever()
 
 # -------------------------
-# RAG + OpenAI
+# RAG + Groq LLM
 # -------------------------
 
 def rag_query(question):
@@ -147,12 +147,14 @@ Question:
 Provide practical sustainability recommendations.
 """
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt
+    response = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
     )
 
-    return response.output_text
+    return response.choices[0].message.content
 
 # -------------------------
 # AI Sustainability Advisor
