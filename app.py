@@ -3,11 +3,11 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest
 import plotly.express as px
 
-# RAG
+# RAG imports
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Groq
+# Groq API
 from groq import Groq
 
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
@@ -118,7 +118,8 @@ vector_db = Chroma(
     embedding_function=embedding_model
 )
 
-retriever = vector_db.as_retriever()
+# limit retrieved docs
+retriever = vector_db.as_retriever(search_kwargs={"k":3})
 
 # -------------------------
 # RAG + Groq LLM
@@ -144,17 +145,23 @@ Knowledge:
 Question:
 {question}
 
-Provide practical sustainability recommendations.
+Provide clear sustainability recommendations for industrial plants.
 """
 
-    response = client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
+    try:
 
-    return response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[
+                {"role":"user","content":prompt}
+            ]
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+
+        return f"Groq API Error: {str(e)}"
 
 # -------------------------
 # AI Sustainability Advisor
