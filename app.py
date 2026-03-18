@@ -118,7 +118,6 @@ vector_db = Chroma(
     embedding_function=embedding_model
 )
 
-# limit retrieved docs
 retriever = vector_db.as_retriever(search_kwargs={"k":3})
 
 # -------------------------
@@ -151,7 +150,7 @@ Provide clear sustainability recommendations for industrial plants.
     try:
 
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role":"user","content":prompt}
             ]
