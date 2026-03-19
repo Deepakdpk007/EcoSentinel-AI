@@ -10,6 +10,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 # Groq API
 from groq import Groq
 
+from sklearn.metrics import classification_report, accuracy_score
+
 st.set_page_config(page_title="EcoSentinel AI", layout="wide")
 
 st.title("EcoSentinel AI")
@@ -50,6 +52,16 @@ df["status"] = df["anomaly"].apply(lambda x: "Alert ⚠️" if x == -1 else "Nor
 df["sustainability_score"] = 100 - (df["water_usage"] * 0.05)
 
 # -------------------------
+# Evaluation (NEW)
+# -------------------------
+
+df["true_label"] = df["water_usage"].apply(lambda x: -1 if x > 800 else 1)
+
+accuracy = accuracy_score(df["true_label"], df["anomaly"])
+
+report = classification_report(df["true_label"], df["anomaly"], output_dict=True)
+
+# -------------------------
 # KPI Metrics
 # -------------------------
 
@@ -73,6 +85,17 @@ st.plotly_chart(fig2)
 
 fig3 = px.bar(df, x="plant_id", y="sustainability_score", title="Sustainability Score")
 st.plotly_chart(fig3)
+
+# -------------------------
+# Model Evaluation (NEW)
+# -------------------------
+
+st.write("## Model Evaluation")
+
+st.write(f"Accuracy: {round(accuracy * 100, 2)}%")
+
+st.write("Classification Report:")
+st.json(report)
 
 # -------------------------
 # AI Anomaly Explanation
