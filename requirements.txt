@@ -3,9 +3,12 @@ pandas
 numpy
 scikit-learn
 plotly
-langchain
-langchain-community
-langchain-text-splitters
+langchain==0.3.7
+langchain-community==0.3.7
+langchain-text-splitters==0.3.2
 sentence-transformers
-chromadb
+chromadb==0.5.5
 groq
+protobuf==3.20.3
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
