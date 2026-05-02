@@ -1,24 +1,37 @@
-from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import CharacterTextSplitter
+import os
+import shutil
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.docstore.document import Document
 
-loader = TextLoader("sustainability_docs.txt")
-documents = loader.load()
+# -------- SETTINGS --------
+PERSIST_DIR = "vector_db"
+COLLECTION_NAME = "sustainability"
 
-text_splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=50)
-docs = text_splitter.split_documents(documents)
+# -------- STEP 1: CLEAN OLD DB --------
+if os.path.exists(PERSIST_DIR):
+    print("Deleting old vector DB...")
+    shutil.rmtree(PERSIST_DIR)
 
+# -------- STEP 2: LOAD DATA --------
+with open("sustainability_docs.txt", "r", encoding="utf-8") as f:
+    text_data = f.read()
+
+docs = [Document(page_content=chunk) for chunk in text_data.split("\n\n")]
+
+# -------- STEP 3: EMBEDDINGS --------
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
+# -------- STEP 4: CREATE VECTOR DB --------
 vector_db = Chroma.from_documents(
-    docs,
-    embedding_model,
-    persist_directory="vector_db"
+    documents=docs,
+    embedding=embedding_model,
+    persist_directory=PERSIST_DIR,
+    collection_name=COLLECTION_NAME
 )
 
 vector_db.persist()
 
-print("Vector database created")
+print("✅ Vector DB created successfully!")
